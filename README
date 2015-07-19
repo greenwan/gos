@@ -1,4 +1,4 @@
-2014, Oct, 23
+2014, Nov, 19
 
 Build
 -----
@@ -7,20 +7,120 @@ Build
 
 How to load your OS
 -------------------
+0) Toolchain Setting
+
+   # Download arm toolchain (compiler, assembler and linker)
+   $ mkdir -p /toolchains;cd /toolchains/
+
+   # Linux
+   $ wget https://launchpad.net/gcc-arm-embedded/4.8/4.8-2014-q3-update/+download/gcc-arm-none-eabi-4_8-2014q3-20140805-linux.tar.bz2
+
+   # MacOS
+   $ wget https://launchpad.net/gcc-arm-embedded/4.8/4.8-2014-q3-update/+download/gcc-arm-none-eabi-4_8-2014q3-20140805-mac.tar.bz2 --no-check-certificate
+
+   # Extract to /toolchains
+   $ tar jxvf *.tar.bz2
+
+   # Export PATH and Environment Variables
+   $ export PATH=$PATH:/toolchains/gcc-arm-none-eabi-4_8-2014q3/bin
+
 1) Prepare QEMU
 
    $ git clone git://git.qemu-project.org/qemu.git
    $ cd qemu
+   $ git submodule update --init dtc
    $ ./configure --prefix=/home/gogojesse/projects/qemu_bin --target-list=arm-softmmu,arm-linux-user --enable-debug
    $ make -s
    $ make install -s
 
 2) Run Qemu
 
-   $ ./qemu-system-arm -M versatilepb -nographic -kernel ./gos.elf
+   $ ./qemu-system-arm -M versatilepb -nographic -kernel ./os.elf
+
+How to Debug
+------------
+1) In console "A", execute qemu in GDB mode with our simpleos.elf
+
+   # option "-S -s" will force qemu wait for gdb connect to itself.
+   # gdb default uses port 1234
+   $ ./qemu-system-arm -M versatilepb -nographic -kernel ./os.elf -S -s
+
+    # ctrl+a z to exit from qemu
+
+2) In console "B", execute gdb to connect to QEMU. (like HW ICE)
+
+   # launch gdb
+   $ arm-none-eabi-gdb
+
+   # after gdb launched. in gdb console.
+   (gdb) file os.elf			# load symbol
+   (gdb) target remote localhost:1234	# connect to qemu
+   (gdb) layout asm			# show asm code window and point
+					# out where code pc point to.
+   (gdb) stepi				# execute one asm line
+   (gdb) p $r0				# r0 = 0
+   (gdb) stepi
+   (gdb) p $r0				# r0 = 1
+   (gdb) stepi				# code will spin at 0x8 forever.
+   (gdb) quit				# ctrl+a z to exit from qemu
 
 Clean
 -----
 
    $ make clean
+
+Features
+--------
+1) Initialized interrupt controller.
+2) Basic scheduler.
+
+   add task00, task01, task02 function.
+   use timer interrupt to trigger context switch.
+   each task prints a string.
+
+3) Enable Cache
+4) add newlib as c library.
+
+Developer maintenance
+---------------------
+1. download code
+
+   $ git clone https://github.com/gogojesse/gos
+
+2. create branch for specific feature
+
+   $ git checkout -b refactor-scheduler
+
+3. commit code to local branch
+
+   $ git commit -s your_file
+
+4. push local branch back to server and create a pull-request for review.
+
+   $ git push origin your_branch_name
+   $ git pull-request -i issue_number    # if no issue number, omit the option -i
+
+5. Update codes from remote
+
+   $ git fetch					# fetch all patches back
+   $ git rebase origin/remote_branch_name
+
+6. Merge pull-request
+
+   visit github website to do it.
+
+References
+----------
+1) User Guide
+
+   http://infocenter.arm.com/help/topic/com.arm.doc.dui0225d/DUI0225D_versatile_application_baseboard_arm926ej_s_ug.pdf
+
+2) Timer
+
+   http://infocenter.arm.com/help/topic/com.arm.doc.ddi0271d/DDI0271.pdf
+
+3) Interrupt Controller
+
+   http://infocenter.arm.com/help/topic/com.arm.doc.ddi0181e/DDI0181.pdf
+
 
